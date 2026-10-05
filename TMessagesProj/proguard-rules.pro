@@ -259,3 +259,8 @@
 -keep class ru.noties.jlatexmath.** { *; }
 -dontwarn org.scilab.forge.jlatexmath.**
 -keep class org.telegram.tgnet.** { *; }
+
+
+# Fix R8 missing classes from MVEL (javax.script)
+-dontwarn javax.script.**
+-dontwarn org.mvel2.jsr223.**
