@@ -109,7 +109,7 @@ import org.telegram.messenger.BotForumHelper;
 import org.telegram.messenger.BotInlineKeyboard;
 import org.telegram.messenger.ChatMessageSharedResources;
 import org.telegram.messenger.ChatObject;
-import org.telegram.messenger.CodeHighlighting;
+import org.telegram.utils.code.highlight.CodeHighlighting;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.DocumentObject;
@@ -18816,7 +18816,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             currentViewsString = null;
             viewsTextWidth = 0;
         }
-        if (messageObject.messageOwner.forwards > 0) {
+        if (NaConfig.INSTANCE.getShowForwardCount().Bool() && messageObject.messageOwner.forwards > 0) {
             currentForwardsString = String.format("%s", LocaleController.formatShortNumber(Math.max(1, messageObject.messageOwner.forwards), null));
             forwardsTextWidth = (int) Math.ceil(Theme.chat_timePaint.measureText(currentForwardsString));
             float drawableWidth = TimeStringHelper.forwardsDrawable != null ? (TimeStringHelper.forwardsDrawable.getIntrinsicWidth() * Theme.chat_timePaint.getTextSize() / Math.max(1f, TimeStringHelper.forwardsDrawable.getIntrinsicHeight())) : 0;
