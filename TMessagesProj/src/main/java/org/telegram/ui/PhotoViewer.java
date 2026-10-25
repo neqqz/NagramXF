@@ -337,6 +337,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -3039,6 +3040,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         default long getDialogId() { return 0; }
         default boolean canSchedule() { return false; }
         default boolean canSetTimer() { return false; }
+        default boolean canSendAsFile() { return true; }
 
         default boolean forceAllInGroup() {
             return false;
@@ -4970,6 +4972,9 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     }
                     closePhoto(true, false);
                 } else if (id == gallery_menu_save) {
+                    if (pageBlocksAdapter != null && !allowShare) {
+                        return;
+                    }
                     if (Build.VERSION.SDK_INT >= 23 && (Build.VERSION.SDK_INT <= 28 || BuildVars.NO_SCOPED_STORAGE) && parentActivity.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                         parentActivity.requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 4);
                         return;
@@ -6034,36 +6039,23 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         menuItem.getPopupLayout().setFitItems(true);
 
         chooseDownloadQualityLayout = new ChooseDownloadQualityLayout(activityContext, menuItem.getPopupLayout().getSwipeBack(), (messageObject, quality) -> {
-            if (quality == null) return;
-            TLRPC.Document document = quality.getDownloadDocument();
-            if (document == null) return;
-            File f = FileLoader.getInstance(currentAccount).getPathToAttach(document, null, false, true);
-            if (f == null || !f.exists()) {
-                f = FileLoader.getInstance(currentAccount).getPathToAttach(document, null, true, true);
-            }
-            if (f != null && f.exists()) {
-                MediaController.saveFile(f.toString(), parentActivity, 1, null, null, uri -> BulletinFactory.createSaveToGalleryBulletin(containerView, true, 0xf9222222, 0xffffffff).show());
-            } else {
-                ArrayList<MessageObject> messageObjects = new ArrayList<>();
-                messageObject.qualityToSave = document;
-                messageObjects.add(messageObject);
-                MediaController.saveFilesFromMessages(parentActivity, AccountInstance.getInstance(currentAccount), messageObjects, (count) -> {
-                    if (parentActivity == null || containerView == null) {
-                        return;
-                    }
-                    if (count > 0) {
-                        BulletinFactory.createSaveToGalleryBulletin(containerView, true, 0xf9222222, 0xffffffff).show();
-                    }
-                });
-            }
+            saveVideoQuality(messageObject, quality);
             menuItem.toggleSubMenu();
         });
 
         galleryButton = menuItem.addSwipeBackItem(R.drawable.msg_gallery, null, getString(R.string.SaveToGallery), chooseDownloadQualityLayout.layout).setColors(0xfffafafa, 0xfffafafa);
         galleryButton.setOnClickListener(v -> {
-            if (currentMessageObject != null && currentMessageObject.hasVideoQualities() && chooseDownloadQualityLayout.update(currentMessageObject)) {
-                galleryButton.openSwipeBack();
-                return;
+            if (currentMessageObject != null && currentMessageObject.hasVideoQualities()) {
+                final VideoPlayer.Quality configuredQuality = getConfiguredVideoQuality(currentMessageObject);
+                if (configuredQuality != null) {
+                    saveVideoQuality(currentMessageObject, configuredQuality);
+                    menuItem.toggleSubMenu();
+                    return;
+                }
+                if (chooseDownloadQualityLayout.update(currentMessageObject)) {
+                    galleryButton.openSwipeBack();
+                    return;
+                }
             }
             if (actionBar != null && actionBar.getActionBarMenuOnItemClick() != null) {
                 actionBar.getActionBarMenuOnItemClick().onItemClick(gallery_menu_save);
@@ -7653,7 +7645,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 spoilerEnabled = entry.hasSpoiler;
             }
 
-            final boolean showSendAsFile = !canEdit && !isCurrentVideo && !captionEdit.hasTimer();
+            final boolean showSendAsFile = !canEdit && !captionEdit.hasTimer() && (placeProvider == null || placeProvider.canSendAsFile()) && !hasVideoEditsLostAsDocument();
             final boolean showSchedule = !canEdit && canScheduleMessage && !hasTtl;
             final boolean showWithoutSound = !(canEdit && canReplace) && !userIsSelf;
             final boolean multipleSelected = placeProvider != null && placeProvider.getSelectedCount() > 1;
@@ -8117,6 +8109,56 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         textSelectionHelper.setInvalidateParent();
 
         animatorPollAttachButtonsVisibility.setValue(false, false);
+    }
+
+    /**
+     * 按「默认 HLS 视频画质」设置解析保存视频时使用的画质。
+     *
+     * @return 设置为自动时返回 {@code null}，此时交给画质选择菜单由用户决定
+     */
+    private VideoPlayer.Quality getConfiguredVideoQuality(MessageObject messageObject) {
+        if (messageObject == null || messageObject.messageOwner == null || messageObject.messageOwner.media == null) {
+            return null;
+        }
+        if (NaConfig.INSTANCE.getDefaultHlsVideoQuality().Int() == 0) {
+            return null;
+        }
+        final ArrayList<VideoPlayer.Quality> qualities = VideoPlayer.getQualities(currentAccount, messageObject.messageOwner.media.document, messageObject.messageOwner.media.alt_documents, 0, false);
+        if (qualities == null || qualities.isEmpty()) {
+            return null;
+        }
+        final VideoPlayer.Quality quality = VideoPlayer.getDefaultSavedQuality(qualities);
+        return quality != null && quality.getDownloadDocument() != null ? quality : null;
+    }
+
+    /** 把指定画质的视频保存到相册。 */
+    private void saveVideoQuality(MessageObject messageObject, VideoPlayer.Quality quality) {
+        if (quality == null) {
+            return;
+        }
+        final TLRPC.Document document = quality.getDownloadDocument();
+        if (document == null) {
+            return;
+        }
+        File f = FileLoader.getInstance(currentAccount).getPathToAttach(document, null, false, true);
+        if (f == null || !f.exists()) {
+            f = FileLoader.getInstance(currentAccount).getPathToAttach(document, null, true, true);
+        }
+        if (f != null && f.exists()) {
+            MediaController.saveFile(f.toString(), parentActivity, 1, null, null, uri -> BulletinFactory.createSaveToGalleryBulletin(containerView, true, 0xf9222222, 0xffffffff).show());
+        } else {
+            final ArrayList<MessageObject> messageObjects = new ArrayList<>();
+            messageObject.qualityToSave = document;
+            messageObjects.add(messageObject);
+            MediaController.saveFilesFromMessages(parentActivity, AccountInstance.getInstance(currentAccount), messageObjects, (count) -> {
+                if (parentActivity == null || containerView == null) {
+                    return;
+                }
+                if (count > 0) {
+                    BulletinFactory.createSaveToGalleryBulletin(containerView, true, 0xf9222222, 0xffffffff).show();
+                }
+            });
+        }
     }
 
     public void invalidateAllGlassAttachedViews() {
@@ -10093,6 +10135,40 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
         }
         return result;
+    }
+
+    // Sending as a document drops VideoEditedInfo, so "Send as file" must not be offered if any video that would be sent is edited
+    private boolean hasVideoEditsLostAsDocument() {
+        final Object current = currentIndex >= 0 && currentIndex < imagesArrLocals.size() ? imagesArrLocals.get(currentIndex) : null;
+        if (isCurrentVideo && hasCurrentVideoEdits(current)) {
+            return true;
+        }
+        // providers without selection (e.g. external share) send every item; with an empty selection only the current one is sent
+        final HashMap<Object, Object> selectedPhotos = placeProvider != null ? placeProvider.getSelectedPhotos() : null;
+        final Collection<Object> toSend = selectedPhotos != null ? selectedPhotos.values() : imagesArrLocals;
+        for (Object object : toSend) {
+            // the current item's saved state may be stale, its live state was checked above
+            if (object != current && object instanceof MediaController.MediaEditState && ((MediaController.MediaEditState) object).hasVideoEditsLostAsDocument()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasCurrentVideoEdits(Object current) {
+        if (muteVideo || videoCutStart > 0 || videoCutEnd < 1f) {
+            return true;
+        }
+        if (current instanceof MediaController.MediaEditState && ((MediaController.MediaEditState) current).coverPath != null) {
+            return true;
+        }
+        if (editState == null) {
+            return false;
+        }
+        return editState.cropState != null && !editState.cropState.isEmpty()
+            || editState.savedFilterState != null
+            || editState.paintPath != null
+            || editState.mediaEntities != null && !editState.mediaEntities.isEmpty();
     }
 
     private VideoEditedInfo getCurrentVideoEditedInfo() {
@@ -14377,6 +14453,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         menuItem.hideSubItem(gallery_menu_set_as_main);
         menuItem.hideSubItem(gallery_menu_delete);
         menuItem.hideSubItem(gallery_menu_copy_frame);
+        menuItem.hideSubItem(gallery_menu_cancel_loading);
         speedItem.setVisibility(View.GONE);
         speedGap.setVisibility(View.GONE);
         videoItem.setVisibility(View.GONE);
@@ -15462,7 +15539,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     }
                     if (isLivePhoto && object instanceof MediaController.PhotoEntry) {
                         final MediaController.PhotoEntry entry = (MediaController.PhotoEntry) object;
-                        compressItem.setVisibility(sendPhotoTypeIsGif || sendPhotoTypeIsPollMedia ? View.GONE : View.VISIBLE);
+                        compressItem.setVisibility(sendPhotoTypeIsGif || sendPhotoTypeIsPollMedia || sendPhotoType == SELECT_TYPE_QR ? View.GONE : View.VISIBLE);
                         compressItem.setPhotoState(highQuality);
                     }
                 } else {
@@ -15477,7 +15554,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     isCurrentVideo = false;
                     if (object instanceof MediaController.PhotoEntry && !((MediaController.PhotoEntry) object).isVideo) {
                         final MediaController.PhotoEntry entry = (MediaController.PhotoEntry) object;
-                        if (!entry.isVideo && sendPhotoType != SELECT_TYPE_STICKER && (currentIndex == index ? getCurrentVideoEditedInfo() : entry.editedInfo) == null) {
+                        if (!entry.isVideo && sendPhotoType != SELECT_TYPE_STICKER && sendPhotoType != SELECT_TYPE_QR && (currentIndex == index ? getCurrentVideoEditedInfo() : entry.editedInfo) == null) {
                             compressItem.setVisibility(sendPhotoTypeIsGif || sendPhotoTypeIsPollMedia ? View.GONE : View.VISIBLE);
                             compressItem.setPhotoState(highQuality);
                         } else {
@@ -15607,7 +15684,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             }
             menuItem.hideSubItem(gallery_menu_translate);
             menuItem.hideSubItem(gallery_menu_hide_translation);
-            allowShare = !MessagesController.getInstance(currentAccount).isPeerNoForwards(currentDialogId) && (currentMessageObject == null || !currentMessageObject.hasRevealedExtendedMedia());
+            allowShare = !MessagesController.getInstance(currentAccount).isPeerNoForwards(currentDialogId) && (currentMessageObject == null || !currentMessageObject.hasRevealedExtendedMedia()) && !isPageBlocksNoForwards(pageBlocksAdapter);
             TL_iv.PageBlock pageBlock = pageBlocksAdapter.get(switchingToIndex);
             caption = pageBlocksAdapter.getCaption(switchingToIndex);
             isVideo = pageBlocksAdapter.isVideo(switchingToIndex);
@@ -15656,8 +15733,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         title = getString(R.string.AttachPhoto);
                     }
                 }
-                galleryButton.setVisibility(View.VISIBLE);
-                galleryGap.setVisibility(View.VISIBLE);
+                galleryButton.setVisibility(allowShare ? View.VISIBLE : View.GONE);
+                galleryGap.setVisibility(allowShare ? View.VISIBLE : View.GONE);
                 menuItem.hideSubItem(gallery_menu_savegif);
                 menuItem.checkHideMenuItem();
             }
@@ -17916,7 +17993,8 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             /*if (chatActivity != null && chatActivity.getCurrentEncryptedChat() != null ||
                 avatarsDialogId != 0 && MessagesController.getInstance(currentAccount).isPeerNoForwards(avatarsDialogId) ||
                 messageObject != null && (MessagesController.getInstance(currentAccount).isPeerNoForwards(messageObject.getDialogId()) ||
-                (messageObject.messageOwner != null && messageObject.messageOwner.noforwards)) || messageObject != null && messageObject.hasRevealedExtendedMedia()
+                (messageObject.messageOwner != null && messageObject.messageOwner.noforwards)) || messageObject != null && messageObject.hasRevealedExtendedMedia() ||
+                isPageBlocksNoForwards(pageBlocksAdapter)
             ) {
                 windowLayoutParams.flags |= WindowManager.LayoutParams.FLAG_SECURE;
                 AndroidUtilities.logFlagSecure();
@@ -19922,6 +20000,20 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
     private boolean shouldMessageObjectAutoPlayed(MessageObject messageObject) {
         return messageObject != null && messageObject.isVideo() && (messageObject.mediaExists || messageObject.attachPathExists || messageObject.hasVideoQualities() || messageObject.canStreamVideo() && SharedConfig.streamMedia) && SharedConfig.isAutoplayVideo();
+    }
+
+    private boolean isPageBlocksNoForwards(PageBlocksAdapter adapter) {
+        if (adapter == null) {
+            return false;
+        }
+        // rich messages open their media as page blocks without a MessageObject/dialogId,
+        // so protected content has to be resolved from the adapter's parent message
+        final Object parent = adapter.getParentObject();
+        if (parent instanceof MessageObject && ((MessageObject) parent).messageOwner != null) {
+            final MessageObject messageObject = (MessageObject) parent;
+            return MessagesController.getInstance(currentAccount).isPeerNoForwards(messageObject.getDialogId()) || messageObject.messageOwner.noforwards || messageObject.hasRevealedExtendedMedia();
+        }
+        return false;
     }
 
     private boolean shouldIndexAutoPlayed(int index) {
