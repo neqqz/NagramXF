@@ -78,8 +78,9 @@ jobs:
       - name: Staging Build
         env:
           COMMIT_ID: ${{ github.event.head_commit.id }}
+          LOCAL_PROPERTIES_PLAIN: ${{ secrets.LOCAL_PROPERTIES }}
         run: |
-          export LOCAL_PROPERTIES="${{ secrets.LOCAL_PROPERTIES }}"
+          export LOCAL_PROPERTIES="$(printf '%s\n' "$LOCAL_PROPERTIES_PLAIN" | base64 -w0)"
           export BUILD_TIMESTAMP=$(date +%s)
           ./gradlew TMessagesProj:assembleStaging
       - uses: actions/upload-artifact@v4

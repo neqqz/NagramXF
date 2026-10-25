@@ -76,13 +76,16 @@ jobs:
           fi
           cat gradle.properties
       - name: Restore keystore
-        run: echo "${{ secrets.KEYSTORE_B64 }}" | base64 -d > TMessagesProj/release.keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: printf '%s' "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > TMessagesProj/release.keystore
       - name: Canary Build
         env:
           COMMIT_ID: ${{ github.event.head_commit.id }}
           NATIVE_TARGET: arm64-v8a
+          LOCAL_PROPERTIES_PLAIN: ${{ secrets.LOCAL_PROPERTIES }}
         run: |
-          export LOCAL_PROPERTIES="${{ secrets.LOCAL_PROPERTIES }}"
+          export LOCAL_PROPERTIES="$(printf '%s\n' "$LOCAL_PROPERTIES_PLAIN" | base64 -w0)"
           export BUILD_TIMESTAMP=$(date +%s)
           ./gradlew TMessagesProj:assemblePluginStaging
       - uses: actions/upload-artifact@v4
