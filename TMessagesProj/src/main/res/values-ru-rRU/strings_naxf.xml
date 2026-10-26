@@ -292,9 +292,6 @@
     <string name="AIError502Info">Сервер временно недоступен.</string>
     <string name="AIError503">Сервис недоступен</string>
     <string name="AIError503Info">Сервис перегружен. Повторите позже.</string>
-    <string name="HideAiEditor">Скрыть AI-редактор</string>
-    <string name="HideAiSummary">Скрыть AI-сводку</string>
-    <string name="AiHideHeader">Скрыть AI-функции</string>
     <string name="TabStyleStroke">Обводка индикатора вкладок</string>
 
     <!-- AyuGram feature-gap completion -->
@@ -373,4 +370,12 @@
     <string name="FeedShownChannels">Показаны в ленте</string>
     <string name="FeedUnreadCounter">Счётчик непрочитанных постов</string>
     <string name="HideFeedTab">Скрыть вкладку ленты</string>
+    <string name="WidePostsInFeed">Широкие посты в ленте</string>
+    <string name="WidePostsInChannels">Широкие посты в каналах</string>
+    <string name="AIReplaceTelegram">Telegram AI</string>
+    <string name="AIFeaturesEditor">Редактор</string>
+    <string name="AIFeaturesSummaries">Сводки</string>
+    <string name="AIReplaceTelegramEditorInfo">Перевод, переписывание и вычитка черновиков через ваш AI-сервис</string>
+    <string name="AIReplaceTelegramSummariesInfo">Краткое изложение длинных сообщений и постов через ваш AI-сервис</string>
+    <string name="AIChatHistoryEmpty">Сохранённых сообщений пока нет</string>
 </resources>

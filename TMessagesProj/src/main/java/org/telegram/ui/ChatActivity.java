@@ -1,3 +1,4 @@
+
 /*
  * This is the source code of Telegram for Android v. 5.x.x.
  * It is licensed under GNU GPL v. 2 or later.
@@ -148,6 +149,7 @@ import com.exteragram.messenger.feed.FeedChatIntegration;
 import com.exteragram.messenger.feed.FeedChannelActions;
 import com.exteragram.messenger.feed.FeedController;
 import com.exteragram.messenger.feed.FeedMessageUtils;
+import com.exteragram.messenger.utils.chats.WidePosts;
 import com.radolyn.ayugram.AyuConstants;
 import com.radolyn.ayugram.AyuUtils;
 import com.radolyn.ayugram.messages.AyuMessagesController;
@@ -38672,6 +38674,7 @@ public class ChatActivity extends BaseFragment implements
     }
 
     private int commentLoadingGuid;
+    private WidePosts.CommentsPostAuthorLoader widePostsCommentsLoader;
     private int commentMessagesLoadingGuid;
     private int commentRequestId;
     private int commentMessagesRequestId;
@@ -38723,6 +38726,11 @@ public class ChatActivity extends BaseFragment implements
                 args.putInt("unread_count", discussionMessage.unread_count);
                 args.putBoolean("historyPreloaded", historyFinal != null);
                 ChatActivity chatActivity = new ChatActivity(args);
+                WidePosts.CommentsPostAuthorLoader loader = widePostsCommentsLoader;
+                widePostsCommentsLoader = null;
+                if (loader != null) {
+                    loader.setMessages(arrayList, chatActivity);
+                }
                 chatActivity.setThreadMessages(arrayList, originalChat, req.msg_id, discussionMessage.read_inbox_max_id, discussionMessage.read_outbox_max_id, null);
                 if (highlightMsgId != 0) {
                     chatActivity.highlightMessageId = highlightMsgId;
@@ -38837,6 +38845,16 @@ public class ChatActivity extends BaseFragment implements
             chatListView.invalidateViews();
         }
         final int guid1 = ++commentLoadingGuid;
+        final WidePosts.CommentsPostAuthorLoader commentsLoader =
+                originalMessage == null && NaConfig.INSTANCE.getWidePostsInChannels().Bool() && ChatObject.isChannelAndNotMegaGroup(chat)
+                        ? new WidePosts.CommentsPostAuthorLoader(currentAccount, chat) : null;
+        widePostsCommentsLoader = commentsLoader;
+        if (commentsLoader != null) {
+            int loaderRequestId = commentsLoader.load(messageId, () -> guid1 != commentLoadingGuid);
+            if (loaderRequestId >= 0) {
+                getConnectionsManager().bindRequestToGuid(loaderRequestId, classGuid);
+            }
+        }
         commentRequestId = getConnectionsManager().sendRequest(req, (response, error) -> {
             Runnable runnable = () -> {
                 if (guid1 != commentLoadingGuid) {
@@ -42701,7 +42719,7 @@ public class ChatActivity extends BaseFragment implements
         public void didPressSummarize(ChatMessageCell cell, boolean byReply) {
             final MessageObject msg = cell.getMessageObject();
             final boolean opening = msg == null || msg.messageOwner == null || !msg.messageOwner.summarizedOpen;
-            if (!TranslateController.isSummarizable(msg) || (opening && NaConfig.INSTANCE.getHideAiSummary().Bool())) {
+            if (!TranslateController.isSummarizable(msg)) {
                 return;
             }
             msg.messageOwner.summarizedOpen = !msg.messageOwner.summarizedOpen;
@@ -47641,6 +47659,22 @@ public class ChatActivity extends BaseFragment implements
         return chatMode == MODE_SEARCH && searchType == 4;
     }
 
+    /** Whether messages of this screen are rendered as wide channel posts. */
+    public boolean isWidePostsScreen() {
+        return WidePosts.isEnabledFor(isFeedSearch(),
+                isFeedSearch()
+                        || ChatObject.isChannelAndNotMegaGroup(currentChat)
+                        || (chatMode == MODE_SEARCH && (searchType == 2 || searchType == 3)));
+    }
+
+    /** Re-binds the visible comment cells after their post author signature was resolved. */
+    public void updateWidePostsCommentsAuthor(ArrayList<MessageObject> messages) {
+        if (messages == null || messages.isEmpty()) {
+            return;
+        }
+        updateVisibleRows();
+    }
+
     public int getBulletinTopOffset() {
         Bulletin.Delegate delegate = bulletinDelegate;
         return delegate != null ? delegate.getTopOffset(0) : AndroidUtilities.statusBarHeight + ActionBar.getCurrentActionBarHeight();
@@ -48804,20 +48838,9 @@ public class ChatActivity extends BaseFragment implements
                         return Boolean.TRUE;
                     },
                     null,
-                    chatActivityEnterView != null && currentChat != null && ChatObject.canSendMessages(currentChat) ? (prompt, response) -> {
-                        if (TextUtils.isEmpty(response)) return;
-                        if (AiConfig.insertAsQuote) {
-                            chatActivityEnterView.getEditField().setText(response);
-                            chatActivityEnterView.getEditField().append("\n");
-                            int start = AiConfig.showResponseOnly ? 0 : prompt.length() + 4;
-                            int end = chatActivityEnterView.getEditText().length() - 1;
-                            org.telegram.ui.Components.QuoteSpan.putQuoteToEditable(chatActivityEnterView.getEditText(), start, end, true);
-                        } else {
-                            chatActivityEnterView.getEditField().setText(response);
-                        }
-                        chatActivityEnterView.getEditField().setSelection(chatActivityEnterView.getEditField().length());
-                        chatActivityEnterView.openKeyboard();
-                    } : null);
+                    chatActivityEnterView != null && currentChat != null && ChatObject.canSendMessages(currentChat)
+                            ? (prompt, response, rich) -> chatActivityEnterView.insertAiResponse(prompt, response, rich)
+                            : null);
         }).show();
     }
 

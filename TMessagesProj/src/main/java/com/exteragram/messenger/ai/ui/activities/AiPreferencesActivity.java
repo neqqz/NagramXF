@@ -16,6 +16,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.exteragram.messenger.ai.AiConfig;
+import xyz.nextalone.nagram.NaConfig;
 import com.exteragram.messenger.ai.AiController;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -50,6 +51,7 @@ public class AiPreferencesActivity extends BaseNekoXSettingsActivity {
     private final ConfigCellTextCheckIcon servicesRow = (ConfigCellTextCheckIcon) cellGroup.appendCell(new ConfigCellTextCheckIcon(null, "AIChatServices", getString(R.string.AIChatServices), R.drawable.msg_language, true, () -> presentFragment(new ServicesActivity())));
     private final AbstractConfigCell useLlmProviderRow = cellGroup.appendCell(new ConfigCellTextCheckIcon(AiConfig.useLlmProviderConfig, null, getString(R.string.AIChatUseLlmProvider), R.drawable.magic_stick, true, null));
     private final ConfigCellTextCheckIcon rolesRow = (ConfigCellTextCheckIcon) cellGroup.appendCell(new ConfigCellTextCheckIcon(null, "AIChatRoles", getString(R.string.AIChatRoles), R.drawable.msg_openprofile, true, () -> presentFragment(new RolesActivity())));
+    private final ConfigCellTextCheckIcon historyRow = (ConfigCellTextCheckIcon) cellGroup.appendCell(new ConfigCellTextCheckIcon(null, "AIChatHistory", getString(R.string.AIChatMessageHistory), R.drawable.msg_discuss, true, () -> presentFragment(new AiHistoryActivity())));
     private final AbstractConfigCell saveHistoryRow = cellGroup.appendCell(new ConfigCellTextCheckIcon(AiConfig.saveHistoryConfig, getString(R.string.AIChatMessageHistory), R.drawable.msg_discuss, false));
 
     private final AbstractConfigCell dividerGeneral = cellGroup.appendCell(new ConfigCellDivider());
@@ -62,6 +64,10 @@ public class AiPreferencesActivity extends BaseNekoXSettingsActivity {
     private final AbstractConfigCell showResponseOnlyRow = cellGroup.appendCell(new ConfigCellTextCheck(AiConfig.showResponseOnlyConfig, null, getString(R.string.AIChatShowResponseOnly)));
     private final AbstractConfigCell insertAsQuoteRow = cellGroup.appendCell(new ConfigCellTextCheck(AiConfig.insertAsQuoteConfig, null, getString(R.string.AIChatInsertAsQuote)));
 
+    private final AbstractConfigCell dividerTelegramAi = cellGroup.appendCell(new ConfigCellDivider());
+    private final AbstractConfigCell headerTelegramAi = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.AIReplaceTelegram)));
+    private final AbstractConfigCell replaceEditorRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getReplaceTelegramAiEditor(), getString(R.string.AIReplaceTelegramEditorInfo), getString(R.string.AIFeaturesEditor)));
+    private final AbstractConfigCell replaceSummariesRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getReplaceTelegramAiSummaries(), getString(R.string.AIReplaceTelegramSummariesInfo), getString(R.string.AIFeaturesSummaries)));
     public AiPreferencesActivity() {
         addRowsToMap(cellGroup);
     }
