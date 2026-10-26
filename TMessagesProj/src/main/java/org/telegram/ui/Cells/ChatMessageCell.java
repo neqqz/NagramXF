@@ -279,6 +279,7 @@ import xyz.nextalone.nagram.NaConfig;
 import xyz.nextalone.nagram.helper.BookmarksHelper;
 
 import com.exteragram.messenger.plugins.PluginsController;
+import com.exteragram.messenger.utils.chats.WidePosts;
 
 import static tw.nekomimi.nekogram.helpers.MessageHelper.showForwardDate;
 
@@ -1625,6 +1626,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     public int sideMenuWidth;
 
     public int backgroundWidth = 100;
+    private boolean widePosts;
+    private boolean widePostsHideAuxiliaryActions;
+    private int widePostsParentWidth;
     private boolean hasNewLineForTime;
 
     public int layoutWidth;
@@ -6860,7 +6864,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     public MultiLayoutTypingAnimator botDraftTypingAnimator;
 
     private void setMessageContent(MessageObject messageObject, MessageObject.GroupedMessages groupedMessages, boolean bottomNear, boolean topNear, boolean firstInChat, boolean lastInChatList) {
-        AyuFilter.syncMaskedSpoilerRevealState(messageObject, groupedMessages);
+        widePosts = messageObject != null && WidePosts.isEnabledFor(messageObject);
+        widePostsHideAuxiliaryActions = widePosts && WidePosts.shouldHideAuxiliaryActions(messageObject);
+        if (widePosts) {
+            messageObject.setWidePostsTextWidth(groupedMessages == null ? getWidePostsContentWidth(messageObject, null, bottomNear) : 0);
+        } else {
+            messageObject.setWidePostsTextWidth(0);
+        }        AyuFilter.syncMaskedSpoilerRevealState(messageObject, groupedMessages);
         if (messageObject != null && messageObject.replyMessageObject != null) {
             AyuFilter.syncMaskedSpoilerRevealState(messageObject.replyMessageObject, null);
         }
@@ -7084,7 +7094,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     drawSideButton = 2;
                 }
             }
-            drawSummarizeButton = !NaConfig.INSTANCE.getHideAiSummary().Bool() && TranslateController.isSummarizable(messageObject);
+            drawSummarizeButton = TranslateController.isSummarizable(messageObject);
             hasReplyQuote = false;
             isReplyQuote = false;
             isReplyTaskOrPollOption = false;
@@ -11447,6 +11457,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         highlightCaptionToSetStart = highlightCaptionToSetEnd = -1;
 
         updateFlagSecure();
+        if (widePosts) {
+            applyWidePostsContentBounds();
+        }
     }
 
     public void checkPollFileState() {
@@ -13845,6 +13858,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        widePostsParentWidth = getParentWidth();
         if (currentMessageObject != null && (currentMessageObject.checkLayout() || lastHeight != AndroidUtilities.displaySize.y)) {
             inLayout = true;
             MessageObject messageObject = currentMessageObject;
@@ -13882,8 +13896,75 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         setMessageObject(messageObject, currentMessagesGroup, pinnedBottom, pinnedTop, firstInChat);
     }
 
+    private int getWidePostsBubbleTargetRight(MessageObject messageObject) {
+        return WidePosts.getBubbleRight(getGroupPhotosWidth());
+    }
+
+    private int getWidePostsBubbleWidth() {
+        return Math.max(dp(120), (getWidePostsBubbleTargetRight(currentMessageObject) - backgroundDrawableLeft) + backgroundDrawableRight);
+    }
+
+    private int getWidePostsContentWidth(MessageObject messageObject, MessageObject.GroupedMessages grouped, boolean extraPadding) {
+        int avatar = !messageObject.isOutOwner() && (grouped == null || grouped.getPosition(messageObject) == null) && isSideMenuEnabled
+                ? dp(74) : messageObject.needDrawAvatar() ? dp(51) : dp(3);
+        int extra = extraPadding ? dp(6) : 0;
+        return Math.max(dp(120), (getWidePostsBubbleTargetRight(messageObject) - avatar + extra) + (dp(3) + extra) - dp(31));
+    }
+
+    private int getWidePostsImageWidth(MessageObject messageObject) {
+        return Math.max(dp(120), (getWidePostsBubbleTargetRight(messageObject) - dp(WidePosts.isTextMessage(messageObject) ? 10 : 4)) - dp(8));
+    }
+
+    private boolean isWidePostsImageMessage() {
+        return widePosts && drawPhotoImage && currentMessageObject != null && currentMessagesGroup == null
+                && (WidePosts.isExpandableMedia(currentMessageObject)
+                || currentMessageObject.type == MessageObject.TYPE_PHOTO
+                || currentMessageObject.type == MessageObject.TYPE_STORY
+                || WidePosts.isTextMessage(currentMessageObject));
+    }
+
+    private void applyWidePostsContentBounds() {
+        int bubbleWidth = getWidePostsBubbleWidth();
+        if (backgroundWidth != bubbleWidth) {
+            backgroundWidth = bubbleWidth;
+        }
+        if (currentMessagesGroup == null) {
+            applyWidePostsImageWidthBeforeLayout();
+        }
+        if (widePostsHideAuxiliaryActions) {
+            drawSideButton = 0;
+            sideButtonVisible = false;
+        }
+    }
+
+    private void applyWidePostsImageWidthBeforeLayout() {
+        if (isWidePostsImageMessage()) {
+            applyWidePostsImageSize(getWidePostsImageWidth(currentMessageObject) - (WidePosts.isTextMessage(currentMessageObject) ? dp(14) : 0));
+        }
+    }
+
+    private void applyWidePostsImageSize(float targetWidth) {
+        float imageWidth = photoImage.getImageWidth();
+        float imageHeight = photoImage.getImageHeight();
+        if (targetWidth < dp(80) || imageWidth < dp(80) || imageHeight < dp(80)) {
+            return;
+        }
+        boolean story = currentMessageObject.type == MessageObject.TYPE_STORY || currentMessageObject.type == MessageObject.TYPE_STORY_MENTION;
+        float newHeight = story ? Math.max(dp(80), Math.round(imageHeight * targetWidth / imageWidth)) : imageHeight;
+        if (Math.abs(targetWidth - imageWidth) > 1f || Math.abs(newHeight - imageHeight) > 1f) {
+            setImageCoords(photoImage.getImageX(), photoImage.getImageY(), targetWidth, newHeight);
+            if (story) {
+                int diff = Math.round(newHeight - imageHeight);
+                if (diff != 0) {
+                    totalHeight = Math.max(dp(1), totalHeight + diff);
+                    requestLayout();
+                }
+            }
+            invalidate();
+        }
+    }
     private int getGroupPhotosWidth() {
-        int width = getParentWidth();
+        int width = widePosts && widePostsParentWidth > 0 ? widePostsParentWidth : getParentWidth();
         if (currentMessageObject != null && currentMessageObject.preview) {
             width = parentWidth;
         }
