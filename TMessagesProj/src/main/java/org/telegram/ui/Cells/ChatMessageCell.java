@@ -13928,6 +13928,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     private void applyWidePostsContentBounds() {
+        if (currentMessageObject == null || currentMessageObject.shouldDrawWithoutBackground()) {
+            return;
+        }
         int bubbleWidth = getWidePostsBubbleWidth();
         if (backgroundWidth != bubbleWidth) {
             backgroundWidth = bubbleWidth;
