@@ -13924,15 +13924,25 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return WidePosts.getBubbleRight(getGroupPhotosWidth());
     }
 
+    /**
+     * Bubble width that makes the right edge land on the wide-post target. The bubble starts at the
+     * current left inset, so the drawn width is the distance from there to the right edge plus the
+     * few dp the normal layout keeps free on the right.
+     */
     private int getWidePostsBubbleWidth() {
-        return Math.max(dp(120), (getWidePostsBubbleTargetRight(currentMessageObject) - backgroundDrawableLeft) + backgroundDrawableRight);
+        final int left = getBackgroundDrawableLeft();
+        int rightInset = backgroundWidth - (getBackgroundDrawableRight() - left);
+        if (rightInset < 0 || rightInset > dp(24)) {
+            rightInset = 0;
+        }
+        return Math.max(dp(120), (getWidePostsBubbleTargetRight(currentMessageObject) - left) + rightInset);
     }
 
     private int getWidePostsContentWidth(MessageObject messageObject, MessageObject.GroupedMessages grouped, boolean extraPadding) {
-        int avatar = !messageObject.isOutOwner() && (grouped == null || grouped.getPosition(messageObject) == null) && isSideMenuEnabled
+        int inset = !messageObject.isOutOwner() && (grouped == null || grouped.getPosition(messageObject) == null) && isSideMenuEnabled
                 ? dp(74) : messageObject.needDrawAvatar() ? dp(51) : dp(3);
         int extra = extraPadding ? dp(6) : 0;
-        return Math.max(dp(120), (getWidePostsBubbleTargetRight(messageObject) - avatar + extra) + (dp(3) + extra) - dp(31));
+        return Math.max(dp(120), (getWidePostsBubbleTargetRight(messageObject) - (inset + extra)) + (dp(3) + extra) - dp(31));
     }
 
     private int getWidePostsImageWidth(MessageObject messageObject) {
