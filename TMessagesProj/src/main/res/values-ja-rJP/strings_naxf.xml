@@ -377,4 +377,5 @@
     <string name="AIFeaturesSummaries">要約</string>
     <string name="AIReplaceTelegramEditorInfo">自分の AI サービスで下書きを翻訳・書き換え・校正します</string>
     <string name="AIReplaceTelegramSummariesInfo">自分の AI サービスで長いメッセージや投稿を要約します</string>
+    <string name="AIChatHistoryEmpty">保存された会話はまだありません</string>
 </resources>

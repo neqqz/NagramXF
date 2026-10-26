@@ -308,4 +308,5 @@
     <string name="AIFeaturesSummaries">Підсумки</string>
     <string name="AIReplaceTelegramEditorInfo">Переклад, переписування та вичитування чернеток через ваш AI-сервіс</string>
     <string name="AIReplaceTelegramSummariesInfo">Стислий виклад довгих повідомлень і постів через ваш AI-сервіс</string>
+    <string name="AIChatHistoryEmpty">Збережених повідомлень ще немає</string>
 </resources>

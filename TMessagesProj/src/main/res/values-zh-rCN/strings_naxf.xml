@@ -292,4 +292,5 @@
     <string name="AIFeaturesSummaries">摘要</string>
     <string name="AIReplaceTelegramEditorInfo">用你自己的 AI 服务翻译、改写和校对草稿</string>
     <string name="AIReplaceTelegramSummariesInfo">用你自己的 AI 服务生成长消息和帖子的摘要</string>
+    <string name="AIChatHistoryEmpty">还没有保存的对话</string>
 </resources>
