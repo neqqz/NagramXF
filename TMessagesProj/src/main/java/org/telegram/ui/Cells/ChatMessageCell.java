@@ -18811,6 +18811,12 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     private void measureTime(MessageObject messageObject) {
+        if (widePosts && !WidePosts.isWideGroupedMedia(currentMessagesGroup) && !messageObject.shouldDrawWithoutBackground()) {
+            final int wideBubbleWidth = getWidePostsBubbleWidth();
+            if (backgroundWidth != wideBubbleWidth) {
+                backgroundWidth = wideBubbleWidth;
+            }
+        }
         CharSequence signString;
         MessageObject primaryMessageObject = getPrimaryMessageObject();
         long fromId = messageObject.getFromChatId();
