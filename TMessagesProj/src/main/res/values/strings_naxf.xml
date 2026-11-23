@@ -312,4 +312,7 @@
     <string name="AIReplaceTelegramEditorInfo">Translate, restyle and proofread drafts with your AI service</string>
     <string name="AIReplaceTelegramSummariesInfo">Summarize long messages and posts with your AI service</string>
     <string name="AIChatHistoryEmpty">No saved messages yet</string>
+    <string name="AIChatProtocolOpenAi">OpenAI compatible</string>
+    <string name="AIChatProtocolAnthropic">Anthropic Claude</string>
+    <string name="AIChatProtocolGemini">Google Gemini</string>
 </resources>

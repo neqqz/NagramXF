@@ -308,4 +308,8 @@
     <string name="AIChatHistoryEmpty">저장된 대화가 없습니다</string>
     <string name="ForceForwardStatusSentCount">%1$d/%2$d</string>
     <string name="RegexFiltersImportUrlHint">https://…</string>
+
+    <string name="AIChatProtocolOpenAi">OpenAI 호환</string>
+    <string name="AIChatProtocolAnthropic">Anthropic Claude</string>
+    <string name="AIChatProtocolGemini">Google Gemini</string>
 </resources>

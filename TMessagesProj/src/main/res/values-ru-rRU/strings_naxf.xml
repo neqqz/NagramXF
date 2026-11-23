@@ -384,4 +384,8 @@
     <string name="AIError502">Ошибка шлюза</string>
     <string name="ForceForwardStatusSentCount">%1$d/%2$d</string>
     <string name="RegexFiltersImportUrlHint">https://…</string>
+
+    <string name="AIChatProtocolOpenAi">Совместимо с OpenAI</string>
+    <string name="AIChatProtocolAnthropic">Anthropic Claude</string>
+    <string name="AIChatProtocolGemini">Google Gemini</string>
 </resources>

@@ -22,6 +22,8 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.SimpleActionBarMenu;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.BulletinFactory;
+import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SectionsScrollView;
@@ -29,8 +31,9 @@ import org.telegram.ui.Components.SectionsScrollView;
 import java.util.ArrayList;
 
 /**
- * Read-only view of the conversation history kept for generation: one block per turn with the
- * request on top and the answer below. The whole history can be cleared from the action bar.
+ * View of the conversation history kept for generation: one block per message with the request
+ * on top and the answer below. Long pressing a block copies or removes its turn, and the action
+ * bar clears everything.
  */
 public class AiHistoryActivity extends BaseFragment {
 
@@ -39,6 +42,7 @@ public class AiHistoryActivity extends BaseFragment {
     private LinearLayout content;
     private TextView emptyView;
     private SectionsScrollView scrollView;
+    private final ArrayList<Message> history = new ArrayList<>();
 
     @Override
     protected boolean useSimpleActionBar() {
@@ -103,8 +107,12 @@ public class AiHistoryActivity extends BaseFragment {
             return;
         }
         content.removeAllViews();
-        ArrayList<Message> history = AiConfig.getConversationHistory();
-        boolean empty = history == null || history.isEmpty();
+        history.clear();
+        ArrayList<Message> stored = AiConfig.getConversationHistory();
+        if (stored != null) {
+            history.addAll(stored);
+        }
+        boolean empty = history.isEmpty();
         emptyView.setVisibility(empty ? View.VISIBLE : View.GONE);
         if (empty) {
             return;
@@ -112,11 +120,37 @@ public class AiHistoryActivity extends BaseFragment {
         for (int i = 0; i < history.size(); i++) {
             Message message = history.get(i);
             boolean outgoing = message != null && "user".equals(message.role());
-            content.addView(createBlock(context, outgoing, message == null ? "" : message.content()));
+            content.addView(createBlock(context, i, outgoing, message == null ? "" : message.content()));
         }
     }
 
-    private View createBlock(Context context, boolean outgoing, String text) {
+    /**
+     * A turn is a request plus its answer, so removing either half removes both. The list is
+     * rewritten from scratch afterwards, which keeps the stored order identical to the screen.
+     */
+    private void deleteTurn(int index) {
+        if (index < 0 || index >= history.size()) {
+            return;
+        }
+        int from = index;
+        int to = index;
+        if ("assistant".equals(history.get(index).role())) {
+            if (index > 0 && "user".equals(history.get(index - 1).role())) {
+                from = index - 1;
+            }
+        } else if (index + 1 < history.size() && "assistant".equals(history.get(index + 1).role())) {
+            to = index + 1;
+        }
+        for (int i = to; i >= from; i--) {
+            history.remove(i);
+        }
+        ArrayList<Message> remaining = new ArrayList<>(history);
+        AiConfig.saveConversationHistory(remaining);
+        Context context = getParentActivity() != null ? getParentActivity() : fragmentView.getContext();
+        rebuild(context);
+    }
+
+    private View createBlock(Context context, int index, boolean outgoing, String text) {
         LinearLayout block = new LinearLayout(context);
         block.setOrientation(LinearLayout.VERTICAL);
         block.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(12),
@@ -144,6 +178,22 @@ public class AiHistoryActivity extends BaseFragment {
         // the block draws its own rounded bubble: no section card behind it
         wrapper.setTag(RecyclerListView.TAG_NOT_SECTION);
         wrapper.addView(block, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        wrapper.setOnLongClickListener(v -> {
+            showBlockOptions(v, index, text);
+            return true;
+        });
         return wrapper;
+    }
+
+    private void showBlockOptions(View anchor, int index, String text) {
+        ItemOptions options = ItemOptions.makeOptions((ViewGroup) fragmentView, resourceProvider, anchor)
+                .setGravity(LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT);
+        options.add(R.drawable.msg_copy, LocaleController.getString(R.string.Copy), () -> {
+            if (AndroidUtilities.addToClipboard(text == null ? "" : text)) {
+                BulletinFactory.of(this).createCopyBulletin(LocaleController.getString(R.string.TextCopied)).show();
+            }
+        });
+        options.add(R.drawable.msg_delete, LocaleController.getString(R.string.Delete), true, () -> deleteTurn(index));
+        options.show();
     }
 }

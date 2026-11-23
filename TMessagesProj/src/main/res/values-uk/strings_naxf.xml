@@ -312,4 +312,7 @@
     <string name="AIReplaceTelegramEditorInfo">Переклад, переписування та вичитування чернеток через ваш AI-сервіс</string>
     <string name="AIReplaceTelegramSummariesInfo">Стислий виклад довгих повідомлень і постів через ваш AI-сервіс</string>
     <string name="AIChatHistoryEmpty">Збережених повідомлень ще немає</string>
+    <string name="AIChatProtocolOpenAi">Сумісно з OpenAI</string>
+    <string name="AIChatProtocolAnthropic">Anthropic Claude</string>
+    <string name="AIChatProtocolGemini">Google Gemini</string>
 </resources>

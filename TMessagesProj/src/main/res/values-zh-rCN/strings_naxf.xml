@@ -303,4 +303,8 @@
     <string name="StickerShapeRounded">圆角</string>
     <string name="StickerShapeRoundedMsg">消息</string>
     <string name="WeatherPickLocationHint">轻触以在地图上选择位置</string>
+
+    <string name="AIChatProtocolOpenAi">OpenAI 兼容</string>
+    <string name="AIChatProtocolAnthropic">Anthropic Claude</string>
+    <string name="AIChatProtocolGemini">Google Gemini</string>
 </resources>

@@ -384,4 +384,8 @@
     <string name="ForceForwardStatusSentCount">%1$d/%2$d</string>
     <string name="NavigationDrawerProxyPingShort">ピング %1$d ms</string>
     <string name="RegexFiltersImportUrlHint">https://…</string>
+
+    <string name="AIChatProtocolOpenAi">OpenAI 互換</string>
+    <string name="AIChatProtocolAnthropic">Anthropic Claude</string>
+    <string name="AIChatProtocolGemini">Google Gemini</string>
 </resources>
