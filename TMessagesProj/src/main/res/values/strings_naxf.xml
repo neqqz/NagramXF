@@ -210,6 +210,7 @@
     <string name="AIChatRolesInfo">Roles define the AI personality and behavior.</string>
     <string name="AIChatSuggestedRoles">Suggested</string>
     <string name="AIChatCustomRoles">Custom</string>
+    <string name="AIChatDeleteRoleInfo">Delete “%1$s”? Its prompt will be removed.</string>
     <string name="AIChatNewRole">New Role</string>
     <string name="AIChatEditRole">Edit Role</string>
     <string name="AIChatRoleName">Name</string>

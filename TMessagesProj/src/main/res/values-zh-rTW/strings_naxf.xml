@@ -280,6 +280,7 @@
     <string name="AIChatRolesInfo">角色定義 AI 的個性與行為。</string>
     <string name="AIChatSuggestedRoles">推薦</string>
     <string name="AIChatCustomRoles">自訂</string>
+    <string name="AIChatDeleteRoleInfo">刪除“%1$s”？它的提示詞將被刪除。</string>
     <string name="AIChatNewRole">新建角色</string>
     <string name="AIChatEditRole">編輯角色</string>
     <string name="AIChatRoleName">名稱</string>

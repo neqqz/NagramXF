@@ -268,6 +268,7 @@
     <string name="AIChatRolesInfo">ロールは AI の性格と動作を定義します。</string>
     <string name="AIChatSuggestedRoles">おすすめ</string>
     <string name="AIChatCustomRoles">カスタム</string>
+    <string name="AIChatDeleteRoleInfo">「%1$s」を削除しますか？プロンプトも削除されます。</string>
     <string name="AIChatNewRole">新規ロール</string>
     <string name="AIChatEditRole">ロールを編集</string>
     <string name="AIChatRoleName">名前</string>

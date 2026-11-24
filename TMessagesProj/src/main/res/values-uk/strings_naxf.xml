@@ -210,6 +210,7 @@
     <string name="AIChatRolesInfo">Ролі визначають характер і поведінку ШІ.</string>
     <string name="AIChatSuggestedRoles">Рекомендовані</string>
     <string name="AIChatCustomRoles">Власні</string>
+    <string name="AIChatDeleteRoleInfo">Видалити «%1$s»? Її промпт буде видалено.</string>
     <string name="AIChatNewRole">Нова роль</string>
     <string name="AIChatEditRole">Змінити роль</string>
     <string name="AIChatRoleName">Ім’я</string>

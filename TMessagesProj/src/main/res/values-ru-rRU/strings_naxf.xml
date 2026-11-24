@@ -266,6 +266,7 @@
     <string name="AIChatRolesInfo">Роли определяют характер и поведение ИИ.</string>
     <string name="AIChatSuggestedRoles">Рекомендуемые</string>
     <string name="AIChatCustomRoles">Свои</string>
+    <string name="AIChatDeleteRoleInfo">Удалить «%1$s»? Её промпт будет удалён.</string>
     <string name="AIChatNewRole">Новая роль</string>
     <string name="AIChatEditRole">Изменить роль</string>
     <string name="AIChatRoleName">Имя</string>
