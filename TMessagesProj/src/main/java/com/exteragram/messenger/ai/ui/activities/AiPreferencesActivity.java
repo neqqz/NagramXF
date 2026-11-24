@@ -83,7 +83,7 @@ public class AiPreferencesActivity extends BasePreferencesActivity {
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         items.add(UItem.asTopView(getTitle(), LocaleController.getString(R.string.AIChatInfo2), "exteraGramPlaceholders", "🤖"));
-        items.add(UItem.asShadow());
+        items.add(UItem.asShadow(null));
         items.add(UItem.asHeader(LocaleController.getString(R.string.General)));
         items.add(UItem.asSettingsCell(ENDPOINT, R.drawable.msg_language, LocaleController.getString(R.string.AIChatServices), getEndpointValue()));
         items.add(UItem.asSettingsCell(ROLE, R.drawable.msg_openprofile, LocaleController.getString(R.string.AIChatRoles), AiConfig.getSelectedRole()));
@@ -105,7 +105,7 @@ public class AiPreferencesActivity extends BasePreferencesActivity {
         UItem quote = UItem.asCheck(INSERT_AS_QUOTE, LocaleController.getString(R.string.AIChatInsertAsQuote), null).setChecked(AiConfig.insertAsQuoteConfig.Bool());
         quote.hideDivider = true;
         items.add(quote);
-        items.add(UItem.asShadow());
+        items.add(UItem.asShadow(null));
 
         items.add(UItem.asHeader(LocaleController.getString(R.string.AIChatTemperature)));
         UItem temperature = UItem.asIntSlideView(1, 0, AiConfig.temperatureConfig.Int(), 20, this::formatTemperature, value -> {
