@@ -154,7 +154,6 @@ public class RolesActivity extends BasePreferencesActivity {
                 .add(R.drawable.msg_delete, LocaleController.getString(R.string.Delete), true, () -> confirmDeleteRole(role))
                 .setScrimViewBackground(listView.getClipBackground(view))
                 .setGravity(LocaleController.isRTL ? 3 : 5)
-                .setDismissOnMoveOutside(true)
                 .show();
         return true;
     }
